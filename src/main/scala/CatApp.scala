@@ -46,10 +46,10 @@ object CatApp extends zio.App {
 
   val app: HttpApp[Any, Nothing] = Http.collectM[Request] {
     case Method.GET -> Root / "schema" => UIO(Response.text(api.render))
-    case Request(endpoint,data) if endpoint._1 == Method.POST && endpoint._2._1 == Root / "graphql" => 
-      data.getGraphQlBody
+    case r: Request if r.matches(Method.POST -> Root / "graphql") => 
+      r.data.asGraphQLRequest
         .flatMap(req => executeRequest(req))
-        .catchAll(err => UIO(Response.fromHttpError(HttpError.BadRequest(err.getMessage))))
+        .catchAll(err => UIO(err.toResponse))
   }
 
   private val PORT = 8090
@@ -60,9 +60,12 @@ object CatApp extends zio.App {
 }
 
 object Extensions {
+
+  extension (r: Request) 
+    def matches(route: Route): Boolean = r.endpoint._1 == route._1 && r.endpoint._2.path == route._2
   
   extension (d: Request.Data)
-    def getGraphQlBody: Task[GraphQLRequest] = d.content match {
+    def asGraphQLRequest: Task[GraphQLRequest] = d.content match {
       case HttpData.CompleteData(data) => 
         ZIO
           .fromEither(Option(data.map(_.toChar).mkString).toRight(new Exception("Error Getting data")))
@@ -70,5 +73,9 @@ object Extensions {
         
       case _                           => ZIO.fail(new Exception("Incomplete data"))
     }
+
+  
+  extension (th: Throwable)
+    def toResponse: UResponse = Response.fromHttpError(HttpError.BadRequest(th.getMessage))
 
 }
