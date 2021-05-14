@@ -1,0 +1,28 @@
+*.class
+*.log
+logs
+target
+.bsp/
+
+/.idea
+/.idea_modules
+/.classpath
+/.project
+/.settings
+/.metals/
+/.vscode
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files #
+#############
+*.idea
+*.iml
