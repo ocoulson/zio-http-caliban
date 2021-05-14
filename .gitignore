@@ -3,6 +3,7 @@
 logs
 target
 .bsp/
+.bloop/
 
 /.idea
 /.idea_modules
