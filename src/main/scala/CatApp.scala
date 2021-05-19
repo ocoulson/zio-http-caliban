@@ -17,10 +17,9 @@ import scala.util.Try
 import java.net.URL
 import Extensions._
 
-object CatApp extends zio.App {
-
-  implicit val urlSchema: Schema[Any, URL] = Schema.stringSchema.contramap(_.toString)
-  implicit val urlArgBuilder: ArgBuilder[URL] = ArgBuilder.string.flatMap(
+object CatApp extends zio.App:
+  given Schema[Any, URL] = Schema.stringSchema.contramap(_.toString)
+  given ArgBuilder[URL] = ArgBuilder.string.flatMap(
     url => Try(new URL(url)).fold(_ => Left(ExecutionError(s"Invalid URL $url")), Right(_))
   )
 
@@ -57,9 +56,8 @@ object CatApp extends zio.App {
   override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = {
     Server.start(PORT, app).exitCode
   }
-}
 
-object Extensions {
+object Extensions:
 
   extension (r: Request) 
     def matches(route: Route): Boolean = r.endpoint._1 == route._1 && r.endpoint._2.path == route._2
@@ -78,4 +76,3 @@ object Extensions {
   extension (th: Throwable)
     def toResponse: UResponse = Response.fromHttpError(HttpError.BadRequest(th.getMessage))
 
-}
