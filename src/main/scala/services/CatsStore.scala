@@ -23,7 +23,7 @@ object CatsStore{
   def addCat(cat: Cat): URIO[CatsStoreService, Unit] = ZIO.accessM(_.get.addCat(cat))
   def editCatPicture(name: String, picUrl: URL): RIO[CatsStoreService, Unit] = ZIO.accessM(_.get.editCatPicture(name, picUrl))
 
-  val live: ZLayer[Any, Nothing, Has[CatsStore.Service]] = ZLayer.succeed(new Service {
+  val test: ZLayer[Any, Nothing, Has[CatsStore.Service]] = ZLayer.succeed(new Service {
     private def Url(s: String)= Try(new URL(s)).toOption
     private var data: List[Cat] = List(
         Cat("Faustus", List("Fluffy", "The Baws"), Url("https://i.natgeofe.com/n/3861de2a-04e6-45fd-aec8-02e7809f9d4e/02-cat-training-NationalGeographic_1484324.jpg"), Colour.Ginger),

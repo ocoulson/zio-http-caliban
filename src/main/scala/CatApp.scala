@@ -57,7 +57,7 @@ object CatApp extends zio.App:
   private val PORT = 8090
 
   override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = {
-    Server.start(PORT, app).provideLayer(CatsStore.live).exitCode
+    Server.start(PORT, app).provideLayer(CatsStore.test).exitCode
   }
 
 object Extensions:
