@@ -2,20 +2,22 @@ import zio._
 import zhttp.http._
 import zhttp.service._
 import caliban.GraphQL.graphQL
+import caliban.GraphQL
 import caliban.RootResolver
-import caliban.schema.{ ArgBuilder, Schema }
+import caliban.schema.{ ArgBuilder, Schema, GenericSchema }
 import caliban.CalibanError.ExecutionError
 import caliban.GraphQLRequest
 import io.circe.Json
 import io.circe.syntax._
 
-import services.{CatService, CatStore}
+import services.{CatsStore, CatsStoreService}
 import models.{Queries, Mutations, Cat}
 
 
 import scala.util.Try
 import java.net.URL
 import Extensions._
+import caliban.schema.GenericSchema
 
 object CatApp extends zio.App:
   given Schema[Any, URL] = Schema.stringSchema.contramap(_.toString)
@@ -23,27 +25,28 @@ object CatApp extends zio.App:
     url => Try(new URL(url)).fold(_ => Left(ExecutionError(s"Invalid URL $url")), Right(_))
   )
 
-  val catService: CatService = new CatStore
+  object schema extends GenericSchema[CatsStoreService]
+  import schema.{given, *}
 
   val queries = Queries(
-    catService.listCats,
-    args => catService.findCat(args.name),
-    catService.randomCatPicture
+    CatsStore.listCats,
+    args => CatsStore.findCat(args.name),
+    CatsStore.randomCatPicture
   )
 
   val mutations = Mutations(
-    args => catService.addCat(args.cat),
-    args => catService.editCatPicture(args.name, args.picUrl)
+    args => CatsStore.addCat(args.cat),
+    args => CatsStore.editCatPicture(args.name, args.picUrl)
   )
   
-  val api = graphQL(RootResolver(queries, mutations))
+  val api: GraphQL[CatsStoreService] = graphQL(RootResolver(queries, mutations))
 
   def executeRequest(request: GraphQLRequest) = for {
     interpreter <- api.interpreter
     res <- interpreter.executeRequest(request)
   } yield Response.jsonString(res.data.toString)
 
-  val app: HttpApp[Any, Nothing] = Http.collectM[Request] {
+  val app: HttpApp[CatsStoreService, Nothing] = Http.collectM[Request] {
     case Method.GET -> Root / "schema" => UIO(Response.text(api.render))
     case r: Request if r.matches(Method.POST -> Root / "graphql") => 
       r.data.asGraphQLRequest
@@ -54,7 +57,7 @@ object CatApp extends zio.App:
   private val PORT = 8090
 
   override def run(args: List[String]): URIO[zio.ZEnv, ExitCode] = {
-    Server.start(PORT, app).exitCode
+    Server.start(PORT, app).provideLayer(CatsStore.live).exitCode
   }
 
 object Extensions:
