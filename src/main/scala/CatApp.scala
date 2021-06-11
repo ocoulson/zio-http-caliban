@@ -49,7 +49,7 @@ object CatApp extends zio.App:
   val app: HttpApp[CatsStoreService, Nothing] = Http.collectM[Request] {
     case Method.GET -> Root / "schema" => UIO(Response.text(api.render))
     case r: Request if r.matches(Method.POST -> Root / "graphql") => 
-      r.data.asGraphQLRequest
+      r.asGraphQLRequest
         .flatMap(req => executeRequest(req))
         .catchAll(err => UIO(err.toResponse))
   }
@@ -65,7 +65,7 @@ object Extensions:
   extension (r: Request) 
     def matches(route: Route): Boolean = r.endpoint._1 == route._1 && r.endpoint._2.path == route._2
   
-  extension (d: Request.Data)
+  extension (d: Request)
     def asGraphQLRequest: Task[GraphQLRequest] = d.content match {
       case HttpData.CompleteData(data) => 
         ZIO
